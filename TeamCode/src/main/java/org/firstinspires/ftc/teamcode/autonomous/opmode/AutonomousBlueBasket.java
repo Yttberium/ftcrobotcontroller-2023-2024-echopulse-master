@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Autonomous
-public class AutonomousBlueTruss extends LinearOpMode {
+public class AutonomousBlueBasket extends LinearOpMode {
     private CommandScheduler scheduler;
     private final AutonomousUtils.AllianceColor color= AutonomousUtils.AllianceColor.Blue;
 
@@ -77,7 +77,7 @@ public class AutonomousBlueTruss extends LinearOpMode {
     private SliderSubsystem sliderSubsystem;
     @Override
     public void runOpMode() throws InterruptedException {
-        AutonomousUtils.StartPosition startPosition = AutonomousUtils.StartPosition.Truss;
+        AutonomousUtils.StartPosition startPosition = AutonomousUtils.StartPosition.Basket;
         scheduler = new CommandScheduler();
         CaseDetectionVisionProcessor processor = new CaseDetectionVisionProcessor(color, startPosition);
         MecanumDrive mecanumDrive = new MecanumDrive(hardwareMap, AutonomousBlueTrussPoses.getStartPose(color, startPosition));
@@ -137,7 +137,7 @@ public class AutonomousBlueTruss extends LinearOpMode {
                                     )
                             )
                     ),
-                    oscillateUntilIntake(mecanumDrive,color),
+                    new WaitCommand(100),
                     new ParallelAction(
                             stackToBackdrop(mecanumDrive, color, startPosition, i),
                             commandToAction(
@@ -149,14 +149,13 @@ public class AutonomousBlueTruss extends LinearOpMode {
                                                     intakeSubsystem.stop(),
                                                     intakeSubsystem.lift(),
                                                     //sliderSubsystem.releaseContact()
-                                                    intakeSubsystem.unlockGrippers(),
                                                     intakeSubsystem.outtake(),
                                                     new WaitCommand(800),
                                                     intakeSubsystem.stop()
                                                     //sliderSubsystem.releaseContact()
                                             ),
                                             new SequentialCommand(
-                                                    new WaitCommand(()->mecanumDrive.pose.position.x> AutonomousUtils.TILE_WIDTH&&depositSubsystem.pixelsInBucket()&&sliderSubsystem.updateMode!= SliderSubsystem.UpdateMode.ENSURE_CONTACT),
+                                                    new WaitCommand(()->mecanumDrive.pose.position.x> AutonomousUtils.TILE_WIDTH&&sliderSubsystem.updateMode!= SliderSubsystem.UpdateMode.ENSURE_CONTACT),
                                                     new ParallelCommand(
                                                             sliderSubsystem.move(new AtomicReference<>(firstRowKinematics[0])),
                                                             liftSubsystem.move(new AtomicReference<>(firstRowKinematics[1])),
@@ -208,7 +207,7 @@ public class AutonomousBlueTruss extends LinearOpMode {
                             backdropToStack(mecanumDrive,color,startPosition,i)
                     ),
 
-                    oscillateUntilIntake(mecanumDrive,color),
+                    new WaitCommand(100),
                     new ParallelAction(
                             stackToBackdropExterior(mecanumDrive, color, startPosition),
                             commandToAction(
@@ -220,14 +219,13 @@ public class AutonomousBlueTruss extends LinearOpMode {
                                                     intakeSubsystem.stop(),
                                                     intakeSubsystem.lift(),
                                                     //sliderSubsystem.releaseContact()
-                                                    intakeSubsystem.unlockGrippers(),
                                                     intakeSubsystem.outtake(),
                                                     new WaitCommand(800),
                                                     intakeSubsystem.stop()
                                                     //sliderSubsystem.releaseContact()
                                             ),
                                             new SequentialCommand(
-                                                    new WaitCommand(()->mecanumDrive.pose.position.x> AutonomousUtils.TILE_WIDTH&&depositSubsystem.pixelsInBucket()&&sliderSubsystem.updateMode!= SliderSubsystem.UpdateMode.ENSURE_CONTACT),
+                                                    new WaitCommand(()->mecanumDrive.pose.position.x> AutonomousUtils.TILE_WIDTH&&sliderSubsystem.updateMode!= SliderSubsystem.UpdateMode.ENSURE_CONTACT),
                                                     new ParallelCommand(
                                                             sliderSubsystem.move(new AtomicReference<>(secondRowKinematics[0])),
                                                             liftSubsystem.move(new AtomicReference<>(secondRowKinematics[1])),
@@ -272,7 +270,7 @@ public class AutonomousBlueTruss extends LinearOpMode {
                             ),
                             backdropToStack2(mecanumDrive,color,startPosition)
                     ),
-                    oscillateUntilIntake2(mecanumDrive,color),
+                    new WaitCommand(100),
                     new ParallelAction(
                             stack2ToBackdropExterior(mecanumDrive, color, startPosition),
                             commandToAction(
@@ -284,7 +282,6 @@ public class AutonomousBlueTruss extends LinearOpMode {
                                                     intakeSubsystem.stop(),
                                                     intakeSubsystem.lift(),
                                                     //sliderSubsystem.releaseContact()
-                                                    intakeSubsystem.unlockGrippers(),
                                                     intakeSubsystem.outtake(),
                                                     new WaitCommand(800),
                                                     intakeSubsystem.stop()
@@ -373,9 +370,9 @@ public class AutonomousBlueTruss extends LinearOpMode {
     }
     public static Action caseAndStack(MecanumDrive drive, AutonomousUtils.AllianceColor color, AutonomousUtils.AutoCase autoCase)
     {
-        final Pose2d startPose = AutonomousRedTrussPoses.getStartPose(color, AutonomousUtils.StartPosition.Truss);
-        final Pose2d casePose = AutonomousRedTrussPoses.getCasePose(color, AutonomousUtils.StartPosition.Truss,autoCase);
-        final Pose2d stackPose = AutonomousRedTrussPoses.getStackPose(color, AutonomousUtils.StartPosition.Truss);
+        final Pose2d startPose = AutonomousRedTrussPoses.getStartPose(color, AutonomousUtils.StartPosition.Basket);
+        final Pose2d casePose = AutonomousRedTrussPoses.getCasePose(color, AutonomousUtils.StartPosition.Basket,autoCase);
+        final Pose2d stackPose = AutonomousRedTrussPoses.getStackPose(color, AutonomousUtils.StartPosition.Basket);
         final Twist2d backAway = new Twist2d(new Vector2d(-8.5,0),0);
 
         switch (autoCase)
@@ -407,124 +404,124 @@ public class AutonomousBlueTruss extends LinearOpMode {
         }
         return null;
     }
-    public Action oscillateUntilIntake(MecanumDrive drive, AutonomousUtils.AllianceColor color)
-    {
-        final Pose2d stackPose = AutonomousBlueTrussPoses.getStackPose(color, AutonomousUtils.StartPosition.Truss);
-        final Pose2d nearStackPose = stackPose.plus(new Twist2d(new Vector2d(-7.5,0),0));
-
-        TrajectoryActionBuilder[] builders = new TrajectoryActionBuilder[]
-            {
-                    drive.actionBuilder(stackPose)
-                            .setTangent(Math.toRadians(180))
-                            .setReversed(true)
-                            .splineToLinearHeading(nearStackPose, Math.toRadians(0), ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30)),
-                    drive.actionBuilder(nearStackPose)
-                            .setTangent(Math.toRadians(0))
-                            .setReversed(false)
-                            .splineToLinearHeading(stackPose, Math.toRadians(180), ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30))
-            };
-        Action[] oscillations = new Action[] {
-            builders[0].build(),
-            builders[1].build()
-        };
-        return new ParallelAction(
-                commandToAction(intakeSubsystem.intakeUntilPixels(false)),
-                new Action() {
-                    boolean init = false;
-                    int oscillationIndex=0;
-                    ElapsedTime time=new ElapsedTime();
-                    @Override
-                    public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-                        if(!init)
-                        {
-                            init=true;
-                            time.reset();
-                        }
-
-                        boolean a = oscillations[oscillationIndex].run(telemetryPacket);
-                        if(!a){
-                            oscillations[oscillationIndex]=builders[oscillationIndex].build();
-                            oscillationIndex=(1-oscillationIndex);
-                            if(oscillationIndex==0)
-                                scheduler.schedule(intakeSubsystem.stack(0));
-                            if(oscillationIndex==1)
-                                scheduler.schedule(
-                                        new SequentialCommand(
-                                                new WaitCommand(300),
-                                                intakeSubsystem.outtake(),
-                                                new WaitCommand(300),
-                                                intakeSubsystem.intake()
-                                        ));
-                        }
-                        if(time.seconds()>7.5)
-                        {
-                            return false;
-                        }
-
-
-
-                        return !intakeSubsystem.bothPixelsDetected();
-                    }
-                }
-        );
-
-
-    }
-    public Action oscillateUntilIntake2(MecanumDrive drive, AutonomousUtils.AllianceColor color)
-    {
-        final Pose2d stackPose = AutonomousBlueTrussPoses.getStack2Pose(color, AutonomousUtils.StartPosition.Truss);
-        final Pose2d nearStackPose = stackPose.plus(new Twist2d(new Vector2d(-5.75,0),0));
-
-        TrajectoryActionBuilder[] builders = new TrajectoryActionBuilder[]
-                {
-                        drive.actionBuilder(stackPose)
-                                .setTangent(stackPose.heading.log()-Math.PI)
-                                .setReversed(true)
-                                .splineToLinearHeading(nearStackPose, stackPose.heading, ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30)),
-                        drive.actionBuilder(nearStackPose)
-                                .setTangent( stackPose.heading)
-                                .setReversed(false)
-                                .splineToLinearHeading(stackPose, stackPose.heading.log()-Math.PI, ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30))
-                };
-        Action[] oscillations = new Action[] {
-                builders[0].build(),
-                builders[1].build()
-        };
-        return new ParallelAction(
-                commandToAction(intakeSubsystem.intakeUntilPixels(false)),
-                new Action() {
-                    boolean init = false;
-                    int oscillationIndex=0;
-                    ElapsedTime time=new ElapsedTime();
-                    @Override
-                    public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-                        if(!init)
-                        {
-                            init=true;
-                            time.reset();
-                        }
-
-                        boolean a = oscillations[oscillationIndex].run(telemetryPacket);
-                        if(!a){
-                            oscillations[oscillationIndex]=builders[oscillationIndex].build();
-                            oscillationIndex=(1-oscillationIndex);
-                            if(oscillationIndex==1)
-                                scheduler.schedule(intakeSubsystem.stack(0));
-                        }
-                        if(time.seconds()>7.5)
-                        {
-                            return false;
-                        }
-
-
-
-                        return !intakeSubsystem.bothPixelsDetected();
-                    }
-                }
-        );
-
-
-    }
+//    public Action oscillateUntilIntake(MecanumDrive drive, AutonomousUtils.AllianceColor color)
+//    {
+//        final Pose2d stackPose = AutonomousBlueTrussPoses.getStackPose(color, AutonomousUtils.StartPosition.Basket);
+//        final Pose2d nearStackPose = stackPose.plus(new Twist2d(new Vector2d(-7.5,0),0));
+//
+//        TrajectoryActionBuilder[] builders = new TrajectoryActionBuilder[]
+//            {
+//                    drive.actionBuilder(stackPose)
+//                            .setTangent(Math.toRadians(180))
+//                            .setReversed(true)
+//                            .splineToLinearHeading(nearStackPose, Math.toRadians(0), ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30)),
+//                    drive.actionBuilder(nearStackPose)
+//                            .setTangent(Math.toRadians(0))
+//                            .setReversed(false)
+//                            .splineToLinearHeading(stackPose, Math.toRadians(180), ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30))
+//            };
+//        Action[] oscillations = new Action[] {
+//            builders[0].build(),
+//            builders[1].build()
+//        };
+//        return new ParallelAction(
+//                commandToAction(intakeSubsystem.intakeUntilPixels(false)),
+//                new Action() {
+//                    boolean init = false;
+//                    int oscillationIndex=0;
+//                    ElapsedTime time=new ElapsedTime();
+//                    @Override
+//                    public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+//                        if(!init)
+//                        {
+//                            init=true;
+//                            time.reset();
+//                        }
+//
+//                        boolean a = oscillations[oscillationIndex].run(telemetryPacket);
+//                        if(!a){
+//                            oscillations[oscillationIndex]=builders[oscillationIndex].build();
+//                            oscillationIndex=(1-oscillationIndex);
+//                            if(oscillationIndex==0)
+//                                scheduler.schedule(intakeSubsystem.stack(0));
+//                            if(oscillationIndex==1)
+//                                scheduler.schedule(
+//                                        new SequentialCommand(
+//                                                new WaitCommand(300),
+//                                                intakeSubsystem.outtake(),
+//                                                new WaitCommand(300),
+//                                                intakeSubsystem.intake()
+//                                        ));
+//                        }
+//                        if(time.seconds()>7.5)
+//                        {
+//                            return false;
+//                        }
+//
+//
+//
+//                        return !intakeSubsystem.bothPixelsDetected();
+//                    }
+//                }
+//        );
+//
+//
+//    }
+//    public Action oscillateUntilIntake2(MecanumDrive drive, AutonomousUtils.AllianceColor color)
+//    {
+//        final Pose2d stackPose = AutonomousBlueTrussPoses.getStack2Pose(color, AutonomousUtils.StartPosition.Basket);
+//        final Pose2d nearStackPose = stackPose.plus(new Twist2d(new Vector2d(-5.75,0),0));
+//
+//        TrajectoryActionBuilder[] builders = new TrajectoryActionBuilder[]
+//                {
+//                        drive.actionBuilder(stackPose)
+//                                .setTangent(stackPose.heading.log()-Math.PI)
+//                                .setReversed(true)
+//                                .splineToLinearHeading(nearStackPose, stackPose.heading, ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30)),
+//                        drive.actionBuilder(nearStackPose)
+//                                .setTangent( stackPose.heading)
+//                                .setReversed(false)
+//                                .splineToLinearHeading(stackPose, stackPose.heading.log()-Math.PI, ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30))
+//                };
+//        Action[] oscillations = new Action[] {
+//                builders[0].build(),
+//                builders[1].build()
+//        };
+//        return new ParallelAction(
+//                commandToAction(intakeSubsystem.intakeUntilPixels(false)),
+//                new Action() {
+//                    boolean init = false;
+//                    int oscillationIndex=0;
+//                    ElapsedTime time=new ElapsedTime();
+//                    @Override
+//                    public boolean run(@NonNull TelemetryPacket telemetryPacket) {
+//                        if(!init)
+//                        {
+//                            init=true;
+//                            time.reset();
+//                        }
+//
+//                        boolean a = oscillations[oscillationIndex].run(telemetryPacket);
+//                        if(!a){
+//                            oscillations[oscillationIndex]=builders[oscillationIndex].build();
+//                            oscillationIndex=(1-oscillationIndex);
+//                            if(oscillationIndex==1)
+//                                scheduler.schedule(intakeSubsystem.stack(0));
+//                        }
+//                        if(time.seconds()>7.5)
+//                        {
+//                            return false;
+//                        }
+//
+//
+//
+//                        return !intakeSubsystem.bothPixelsDetected();
+//                    }
+//                }
+//        );
+//
+//
+//    }
     public Action stackToBackdrop(MecanumDrive drive, AutonomousUtils.AllianceColor color, AutonomousUtils.StartPosition startPosition, AutonomousUtils.AutoCase autoCase)
     {
         final Pose2d cotPose = AutonomousUtils.mirrorColor(new Pose2d(AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF, Math.toRadians(0)),color);

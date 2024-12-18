@@ -17,11 +17,13 @@ public class DepositCalibrationTeleOp extends LinearOpMode {
         OracleGamepad gamepad = new OracleGamepad(gamepad1);
         waitForStart();
         scheduler.schedule(depositSubsystem.manual());
-        scheduler.schedule(depositSubsystem.telemetry());
 
         while (opModeIsActive())
         {
-            if(gamepad.cross.pressed().get()) scheduler.schedule(depositSubsystem.launchPlane());
+            if(gamepad.cross.pressed().get())  scheduler.schedule(depositSubsystem.open());
+            if(gamepad.circle.pressed().get()) scheduler.schedule(depositSubsystem.close());
+            if(gamepad.square.pressed().get()) scheduler.schedule(depositSubsystem.reset());
+
             scheduler.update();
             telemetry.update();
             gamepad.process();

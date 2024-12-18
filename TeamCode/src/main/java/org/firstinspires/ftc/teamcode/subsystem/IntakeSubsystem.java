@@ -44,7 +44,7 @@ public class IntakeSubsystem extends Subsystem {
             new double[] {1, 0.95}
     };
     public static double[] idlePosition = new double[] {0.25, 0.84-0.38};
-    public static double[] liftedPosition=new double[] {0.33, 0.24};
+    public static double[] liftedPosition=new double[] {0.33, 0.27};
 
     public static TrapezoidalMotionProfile v4bMotionProfile = new TrapezoidalMotionProfile(3.5,4,3);
     public static TrapezoidalMotionProfile pitchV4BMotionProfile = new TrapezoidalMotionProfile(3,5,3);
@@ -88,22 +88,6 @@ public class IntakeSubsystem extends Subsystem {
     {
         return new InstantCommand(()->intake.setPower(-1.0));
     }
-    public Command intakeUntilPixels(boolean expulse)
-    {
-        return new SequentialCommand(
-                intake(),
-                new WaitCommand(this::bothPixelsDetected),
-                lockGrippers(),
-                new WaitCommand(200),
-                new ConditionalCommand(()->expulse,
-                        new SequentialCommand(
-                                outtake(),
-                                new WaitCommand(500),
-                                stop()
-                        ),
-                        stop())
-        );
-    }
 
     public Command lockColor(AutonomousUtils.AllianceColor color)
     {
@@ -121,20 +105,6 @@ public class IntakeSubsystem extends Subsystem {
         return new InstantCommand(()->intake.setPower(0.0));
     }
 
-    public Command lockGrippers()
-    {
-        return new InstantCommand(()-> {
-            rightIntake.setPosition(grabberPositions[1][0]);
-            leftIntake.setPosition(grabberPositions[1][1]);
-        });
-    }
-    public Command unlockGrippers()
-    {
-        return new InstantCommand(()-> {
-            rightIntake.setPosition(grabberPositions[0][0]);
-            leftIntake.setPosition(grabberPositions[0][1]);
-        });
-    }
 
     public Command stack(int stack)
     {
@@ -159,10 +129,6 @@ public class IntakeSubsystem extends Subsystem {
         return new IntakeMoveCommand(0.25, 0.24);
     }
     // Helpers
-    public boolean bothPixelsDetected()
-    {
-        return !leftIntakeSensor.getState()&&!rightIntakeSensor.getState();
-    }
 
     public class IntakeMoveCommand extends Command {
         private final double v4bTargetPosition, pitchV4BTargetPosition;

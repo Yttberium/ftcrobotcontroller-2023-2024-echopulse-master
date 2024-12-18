@@ -10,6 +10,12 @@ import com.noahbres.meepmeep.roadrunner.DefaultBotBuilder;
 import com.noahbres.meepmeep.roadrunner.DriveShim;
 import com.noahbres.meepmeep.roadrunner.entity.RoadRunnerBotEntity;
 
+import java.awt.Image;
+import java.io.File;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
 public class AutonomousTruss {
     public static void main(String[] args)
     {
@@ -35,11 +41,11 @@ public class AutonomousTruss {
 //                        stack2ToBackdropExterior(bot.getDrive(),color,startPosition)
                     )
             );
-        meepMeep.setBackground(MeepMeep.Background.FIELD_CENTERSTAGE_JUICE_DARK)
-                .setDarkMode(true)
-                .setBackgroundAlpha(0.95f)
-                .addEntity(bot)
-                .start();
+        Image img = null;
+        try { img = ImageIO.read(new File("<\"C:\\Users\\minec\\Documents\\field.png\">")); }
+        catch(IOException e) {}
+
+        meepMeep.setBackground(img);
 
 //        meepMeep.setBackground(MeepMeep.Background.FIELD_CENTERSTAGE_JUICE_DARK)
 //                .setDarkMode(true)

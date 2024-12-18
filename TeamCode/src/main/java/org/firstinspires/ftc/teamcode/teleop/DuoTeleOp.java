@@ -44,7 +44,7 @@ public class DuoTeleOp extends LinearOpMode {
         HANGED,
         UNHANGED,
 
-        PLANE,
+
         BM_MAXIMUS
     }
     public static double speed=50;
@@ -154,75 +154,6 @@ public class DuoTeleOp extends LinearOpMode {
                         .requires(intakeSubsystem)
                         .build())
                 .transition(TeleOpState.INTAKING_0, TeleOpState.LOADED, ()->operatorGamepad.right_bumper.get() && operatorGamepad.left_bumper.get(),intakeSubsystem.lift())
-                .transition(TeleOpState.INTAKING_0, TeleOpState.LOADED, intakeSubsystem::bothPixelsDetected,
-                        new SequentialCommand(
-
-                                intakeSubsystem.lockGrippers(),
-                                new InstantCommand(()->{
-                                    gamepad1.rumble(1,1, 500);
-                                    gamepad2.rumble(1,1, 500);
-                                }),
-                                new WaitCommand(350),
-                                intakeSubsystem.outtake(),
-                                new WaitCommand(250),
-                                intakeSubsystem.stop(),
-                                new ParallelCommand(
-                                        new SequentialCommand(
-                                                new WaitCommand(200),
-                                                intakeSubsystem.unlockGrippers()
-                                        ),
-                                        intakeSubsystem.lift(),
-                                        sliderSubsystem.closeContact()
-                                ),
-                                new WaitCommand(100),
-                                intakeSubsystem.outtake(),
-                                new WaitCommand(1000),
-                                sliderSubsystem.releaseContact(),
-                                intakeSubsystem.stop()
-                        ))
-                .transition(TeleOpState.INTAKING_1, TeleOpState.LOADED, intakeSubsystem::bothPixelsDetected,
-                        new SequentialCommand(
-                                intakeSubsystem.lockGrippers(),
-                                new InstantCommand(()->{
-                                    gamepad1.rumble(1,1, 500);
-                                    gamepad2.rumble(1,1, 500);
-                                }),
-                                new WaitCommand(350),
-                                intakeSubsystem.outtake(),
-                                new WaitCommand(250),
-                                intakeSubsystem.stop(),
-                                new ParallelCommand(
-                                        new SequentialCommand(
-                                                new WaitCommand(200),
-                                                intakeSubsystem.unlockGrippers()
-                                        ),
-                                        intakeSubsystem.lift(),
-                                        sliderSubsystem.closeContact()
-                                ),
-                                new WaitCommand(100),
-                                intakeSubsystem.outtake(),
-                                new WaitCommand(1000),
-                                intakeSubsystem.stop()
-                        ))
-                .transition(TeleOpState.INTAKING_3, TeleOpState.LOADED, intakeSubsystem::bothPixelsDetected,
-                        new SequentialCommand(
-                                intakeSubsystem.lockGrippers(),
-                                new InstantCommand(()->{
-                                    gamepad1.rumble(1,1, 500);
-                                    gamepad2.rumble(1,1, 500);
-                                }),
-                                new WaitCommand(350),
-                                intakeSubsystem.outtake(),
-                                new WaitCommand(250),
-                                intakeSubsystem.stop(),
-                                sliderSubsystem.closeContact(),
-                                                    intakeSubsystem.unlockGrippers(),
-                                intakeSubsystem.lift(),
-                                new WaitCommand(800),
-                                intakeSubsystem.outtake(),
-                                new WaitCommand(1500),
-                                intakeSubsystem.stop()
-                        ))
                 .transition(TeleOpState.LOADED, TeleOpState.DEPOSITING, operatorGamepad.dpad_down.pressed(), new SequentialCommand(
                         new InstantCommand(()->{
                             double[] ik = Kinematics.inverseKinematics(positions[0][0], positions[0][1]);
@@ -268,6 +199,12 @@ public class DuoTeleOp extends LinearOpMode {
                             targetAngle.set(ik[2]);
                             targetPitch.set(ik[3]);
                         }),
+//        public static double[][] positions = new double[][] {
+//                new double[] { 335, 200},
+//                new double[] { 360, 300},
+//                new double[] { 385, 400},
+//                new double[] { 385, 500},
+//        };
                         new ParallelCommand(
                                 sliderSubsystem.move(targetDistance),
                                 liftSubsystem.move(targetHeight),
@@ -364,14 +301,6 @@ public class DuoTeleOp extends LinearOpMode {
                 .state(TeleOpState.DEPOSITING, new ParallelCommand(
                         Command.builder()
                                 .update(()->{
-                                    if(driverGamepad.square.pressed().get())
-                                    {
-                                        Command.run(depositSubsystem.openLeft());
-                                    }
-                                    if(driverGamepad.circle.pressed().get())
-                                    {
-                                        Command.run(depositSubsystem.openRight());
-                                    }
                                     if(driverGamepad.cross.pressed().get())
                                     {
                                         Command.run(depositSubsystem.open());
@@ -438,7 +367,7 @@ public class DuoTeleOp extends LinearOpMode {
                             }
                         })
                         .build())))
-                .transition(TeleOpState.DEPOSITING, TeleOpState.IDLE, depositSubsystem::bothPixelsDropped,
+                .transition(TeleOpState.DEPOSITING, TeleOpState.IDLE, depositSubsystem::SampleDropped,
                         new SequentialCommand(
                                 new InstantCommand(()->{
                                     double newX = targetX.get()+Math.cos(Math.toRadians(60))*70;
@@ -503,32 +432,6 @@ public class DuoTeleOp extends LinearOpMode {
                                 intakeSubsystem.idleDepositing()
                         )
                 ))
-                .transition(TeleOpState.IDLE, TeleOpState.PLANE, ()->driverGamepad.dpad_left.pressed().get()&&planeTime.seconds()>90.0,new SequentialCommand(
-//                        new InstantCommand(()->{
-//                            double[] ik = Kinematics.inverseKinematics(100, 340);
-//                            targetDistance.set(ik[0]);
-//                            targetHeight.set(ik[1]);
-//                            targetAngle.set(ik[2]);
-//                            targetPitch.set(ik[3]);
-//                        }),
-                        new ParallelCommand(
-//                                sliderSubsystem.move(targetDistance),
-//                                liftSubsystem.move(targetHeight),
-                                depositSubsystem.pitch(new AtomicReference<>(50.0))
-                        )))
-                .transition(TeleOpState.LOADED, TeleOpState.PLANE, driverGamepad.dpad_left.pressed(), new SequentialCommand(
-//                        new InstantCommand(()->{
-//                            double[] ik = Kinematics.inverseKinematics(100, 260);
-//                            targetDistance.set(ik[0]);
-//                            targetHeight.set(ik[1]);
-//                            targetAngle.set(ik[2]);
-//                            targetPitch.set(ik[3]);
-//                        }),
-                        new ParallelCommand(
-//                                sliderSubsystem.move(targetDistance),
-//                                liftSubsystem.move(targetHeight),
-                                depositSubsystem.pitch(new AtomicReference<>(50.0))
-                        )))
                 .transition(TeleOpState.DEPOSITING, TeleOpState.DEPOSITING, operatorGamepad.dpad_down.pressed(), new SequentialCommand(
                         new InstantCommand(()->{
                             double[] ik = Kinematics.inverseKinematics(positions[0][0], positions[0][1]);
@@ -594,25 +497,8 @@ public class DuoTeleOp extends LinearOpMode {
                                 depositSubsystem.pitch(targetAngle)
                         )
                 ))
-                .transition(TeleOpState.IDLE, TeleOpState.LOADED, intakeSubsystem::bothPixelsDetected, new InstantCommand(()->{}))
-                .transition(TeleOpState.PLANE, TeleOpState.IDLE, driverGamepad.dpad_right.pressed(),  new SequentialCommand(
-                        depositSubsystem.launchPlane(),
-                        new WaitCommand(500),
-                        new ParallelCommand(
-                                new SequentialCommand(
-                                        new WaitCommand(500),
-                                        sliderSubsystem.retract()
-                                ),
-                                new SequentialCommand(
-                                        new WaitCommand(250),
-                                        depositSubsystem.pitch(new AtomicReference<>(13.86)),
-                                        depositSubsystem.close()
-                                ),
-                                new SequentialCommand(
-                                        new WaitCommand(750),
-                                        liftSubsystem.move(new AtomicReference<>(0.0))
-                                )
-                        )))
+
+
                 .transition(TeleOpState.IDLE, TeleOpState.HANG, driverGamepad.dpad_up.pressed(),
                         new SequentialCommand(
                                 intakeSubsystem.idle(),
@@ -665,7 +551,6 @@ public class DuoTeleOp extends LinearOpMode {
         for (LynxModule module : modules)
             module.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         scheduler.schedule(mecanumSubsystem.drive(driverGamepad));
-        scheduler.schedule(depositSubsystem.telemetry());
         scheduler.schedule(intakeSubsystem.telemetry());
         scheduler.schedule(sliderSubsystem.telemetry());
         scheduler.schedule(liftSubsystem.telemetry());

@@ -44,7 +44,7 @@ public class IntakeSubsystem extends Subsystem {
             new double[] {1, 0.95}
     };
     public static double[] idlePosition = new double[] {0.25, 0.84-0.38};
-    public static double[] liftedPosition=new double[] {0.33, 0.27};
+    public static double[] liftedPosition=new double[] {0.53,0.4};
 
     public static TrapezoidalMotionProfile v4bMotionProfile = new TrapezoidalMotionProfile(3.5,4,3);
     public static TrapezoidalMotionProfile pitchV4BMotionProfile = new TrapezoidalMotionProfile(3,5,3);

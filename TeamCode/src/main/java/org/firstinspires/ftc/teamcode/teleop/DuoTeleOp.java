@@ -153,7 +153,62 @@ public class DuoTeleOp extends LinearOpMode {
                         })
                         .requires(intakeSubsystem)
                         .build())
-                .transition(TeleOpState.INTAKING_0, TeleOpState.LOADED, ()->operatorGamepad.right_bumper.get() && operatorGamepad.left_bumper.get(),intakeSubsystem.lift())
+                .transition(TeleOpState.INTAKING_0, TeleOpState.LOADED,operatorGamepad.dpad_right.pressed(),
+                        new SequentialCommand(
+                                new InstantCommand(()->{
+                                    gamepad1.rumble(1,1, 500);
+                                    gamepad2.rumble(1,1, 500);
+                                }),
+                                new WaitCommand(350),
+                                intakeSubsystem.outtake(),
+                                new WaitCommand(250),
+                                intakeSubsystem.stop(),
+                                new ParallelCommand(
+                                        intakeSubsystem.lift(),
+                                        sliderSubsystem.closeContact()
+                                ),
+                                new WaitCommand(100),
+                                intakeSubsystem.outtake(),
+                                new WaitCommand(1000),
+                                sliderSubsystem.releaseContact(),
+                                intakeSubsystem.stop()
+                        ))
+                .transition(TeleOpState.INTAKING_1, TeleOpState.LOADED,operatorGamepad.dpad_right.pressed(),new SequentialCommand(
+                        new InstantCommand(()->{
+                            gamepad1.rumble(1,1, 500);
+                            gamepad2.rumble(1,1, 500);
+                        }),
+                        new WaitCommand(350),
+                        intakeSubsystem.outtake(),
+                        new WaitCommand(250),
+                        intakeSubsystem.stop(),
+                        new ParallelCommand(
+                                intakeSubsystem.lift(),
+                                sliderSubsystem.closeContact()
+                        ),
+                        new WaitCommand(100),
+                        intakeSubsystem.outtake(),
+                        new WaitCommand(1000),
+                        intakeSubsystem.stop()
+                ))
+                .transition(TeleOpState.INTAKING_3, TeleOpState.LOADED,operatorGamepad.dpad_right.pressed(),new SequentialCommand(
+                        new InstantCommand(()->{
+                            gamepad1.rumble(1,1, 500);
+                            gamepad2.rumble(1,1, 500);
+                        }),
+                        new WaitCommand(350),
+                        intakeSubsystem.outtake(),
+                        new WaitCommand(250),
+                        intakeSubsystem.stop(),
+                        new ParallelCommand(
+                                intakeSubsystem.lift(),
+                                sliderSubsystem.closeContact()
+                        ),
+                        new WaitCommand(100),
+                        intakeSubsystem.outtake(),
+                        new WaitCommand(1000),
+                        intakeSubsystem.stop()
+                ))
                 .transition(TeleOpState.LOADED, TeleOpState.DEPOSITING, operatorGamepad.dpad_down.pressed(), new SequentialCommand(
                         new InstantCommand(()->{
                             double[] ik = Kinematics.inverseKinematics(positions[0][0], positions[0][1]);
@@ -199,12 +254,7 @@ public class DuoTeleOp extends LinearOpMode {
                             targetAngle.set(ik[2]);
                             targetPitch.set(ik[3]);
                         }),
-//        public static double[][] positions = new double[][] {
-//                new double[] { 335, 200},
-//                new double[] { 360, 300},
-//                new double[] { 385, 400},
-//                new double[] { 385, 500},
-//        };
+
                         new ParallelCommand(
                                 sliderSubsystem.move(targetDistance),
                                 liftSubsystem.move(targetHeight),

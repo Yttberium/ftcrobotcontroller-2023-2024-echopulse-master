@@ -41,17 +41,12 @@ public class AutonomousTruss {
 //                        stack2ToBackdropExterior(bot.getDrive(),color,startPosition)
                     )
             );
-        Image img = null;
-        try { img = ImageIO.read(new File("<\"C:\\Users\\minec\\Documents\\field.png\">")); }
-        catch(IOException e) {}
 
-        meepMeep.setBackground(img);
-
-//        meepMeep.setBackground(MeepMeep.Background.FIELD_CENTERSTAGE_JUICE_DARK)
-//                .setDarkMode(true)
-//                .setBackgroundAlpha(0.95f)
-//                .addEntity(bot)
-//                .start();
+        meepMeep.setBackground(MeepMeep.Background.FIELD_CENTERSTAGE_JUICE_DARK)
+                .setDarkMode(true)
+                .setBackgroundAlpha(0.95f)
+                .addEntity(bot)
+                .start();
     }
     public static Action caseAndStack(DriveShim driveShim, AutonomousUtils.AllianceColor color, AutonomousUtils.AutoCase autoCase)
     {

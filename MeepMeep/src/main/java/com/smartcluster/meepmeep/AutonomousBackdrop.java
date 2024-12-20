@@ -14,8 +14,8 @@
 //    public static void main(String[] args)
 //    {
 //        MeepMeep meepMeep = new MeepMeep(800);
-//        AutonomousUtils.AllianceColor color = AutonomousUtils.AllianceColor.Red;
-//        AutonomousUtils.StartPosition startPosition = AutonomousUtils.StartPosition.Backdrop;
+//        AutonomousUtils.AllianceColor color = AutonomousUtils.AllianceColor.Blue;
+//        AutonomousUtils.StartPosition startPosition = AutonomousUtils.StartPosition.Corner;
 //        AutonomousUtils.Park park = AutonomousUtils.Park.Side;
 //        AutonomousUtils.AutoCase autoCase= AutonomousUtils.AutoCase.Side;
 //        RoadRunnerBotEntity bot = new DefaultBotBuilder(meepMeep)

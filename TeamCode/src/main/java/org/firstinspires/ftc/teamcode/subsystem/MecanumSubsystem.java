@@ -59,8 +59,8 @@ public class MecanumSubsystem extends Subsystem {
                     double rx = Math.signum(rightStick.x)*rotateSlewRateLimiter.calculate(Math.abs(rightStick.x));// (gamepad.right_bumper.processAndGet()?1:2);
 
                     boolean boost = gamepad.left_bumper.get()||gamepad.right_bumper.get();
-                    double x = leftStick.x*1.15 / ((boost)?0.8:2)* face[0];
-                    double y= -leftStick.y / (boost?0.8:2)* face[0];
+                    double x = leftStick.x;
+                    double y= -leftStick.y;
 
                     double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
                     double frontLeftPower = (y + x + rx) / denominator;

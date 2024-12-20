@@ -35,16 +35,24 @@ public class IntakeSubsystem extends Subsystem {
             new double[] {0.03, 0.90-0.38},
             new double[] {0.03, 0.88-0.38},
             new double[] {0.03, 0.86-0.38},
-            new double[] {0.03, 0.84-0.38},
+            new double[] {0.27, 0.82},
             new double[] {0.03, 0.82-0.38},
     };
+//    public static class Manual {
+//        public double intakePosition=liftedPosition[0];
+//        public double pitchPosition=liftedPosition[1];
+//        public double servoOffset=IntakeSubsystem.servoOffset;
+//        public double leftIntakePosition=grabberPositions[0][1];
+//        public double rightIntakePosition=grabberPositions[0][0];
+//        public double intakePower=0.0;
+//    };
 
     public static double[][] grabberPositions = new double[][] {
-            new double[] {0.53,0.4},
+            new double[] {0.5,0.295},
             new double[] {1, 0.95}
     };
     public static double[] idlePosition = new double[] {0.25, 0.84-0.38};
-    public static double[] liftedPosition=new double[] {0.53,0.4};
+    public static double[] liftedPosition=new double[] {0.5,0.295};
 
     public static TrapezoidalMotionProfile v4bMotionProfile = new TrapezoidalMotionProfile(3.5,4,3);
     public static TrapezoidalMotionProfile pitchV4BMotionProfile = new TrapezoidalMotionProfile(3,5,3);
@@ -98,7 +106,7 @@ public class IntakeSubsystem extends Subsystem {
     }
     public Command outtake()
     {
-        return new InstantCommand(()->intake.setPower(1.0));
+        return new InstantCommand(()->intake.setPower(0.6));
     }
     public Command stop()
     {

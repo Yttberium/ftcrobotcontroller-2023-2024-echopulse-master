@@ -28,7 +28,7 @@ public class IntakeSubsystem extends Subsystem {
     // Hardware
     private final ServoImplEx rightV4B, leftV4B, pitchV4B, leftIntake, rightIntake;
     private final DcMotorEx intake;
-    private final DigitalChannel leftIntakeSensor, rightIntakeSensor;
+
     // Config
     public static double servoOffset=-0.044;
     public static double[][] stackPositions = new double[][]{
@@ -68,11 +68,6 @@ public class IntakeSubsystem extends Subsystem {
         intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftV4B.setPwmRange(new PwmControl.PwmRange(550,2450));
         rightV4B.setPwmRange(new PwmControl.PwmRange(550,2450));
-        leftIntakeSensor=hardwareMap.get(DigitalChannel.class, "leftIntakeSensor");
-        rightIntakeSensor=hardwareMap.get(DigitalChannel.class, "rightIntakeSensor");
-        leftIntakeSensor.setMode(DigitalChannel.Mode.INPUT);
-        rightIntakeSensor.setMode(DigitalChannel.Mode.INPUT);
-
 //        Command.run(reset());
     }
 
@@ -193,8 +188,7 @@ public class IntakeSubsystem extends Subsystem {
     {
         return Command.builder()
                 .update(()->{
-                    telemetry.addData("leftPixel", !leftIntakeSensor.getState());
-                    telemetry.addData("rightPixel", !rightIntakeSensor.getState());
+
                 })
                 .requires(this)
                 .build();

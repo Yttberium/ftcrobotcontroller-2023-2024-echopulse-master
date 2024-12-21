@@ -24,8 +24,8 @@ public class DepositSubsystem extends Subsystem {
 
     // Config
     public static TrapezoidalMotionProfile depositMotionProfile = new TrapezoidalMotionProfile(3,4,4);
-    public static double[] closedPositions=new double[] {0.02,0.04};
-    public static double[] openPositions = new double[] {-0.33,-0.31};
+    public static double[] closedPositions = new double[] {0.32, 0.34};
+    public static double[] openPositions = new double[] {-0.33, -0.31};
     public DepositSubsystem(OpMode opMode) {
         super(opMode);
 

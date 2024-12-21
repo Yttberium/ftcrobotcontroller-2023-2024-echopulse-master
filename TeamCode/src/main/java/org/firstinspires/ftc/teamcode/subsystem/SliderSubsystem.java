@@ -61,9 +61,9 @@ public class SliderSubsystem extends Subsystem {
                     updateTargetDistance(0);
                 })
                 .update(()->{
-                    if(slider.isOverCurrent()&&getSliderPosition()>100)
+                    if(slider.isOverCurrent()&&getSliderPosition()>50)
                     {
-                        updateTargetDistance(200);
+                        updateTargetDistance(100);
                     }else if(Math.abs(getSliderPosition()-targetSliderPosition)<tolerance){
                         updateTargetDistance(0);
                     }

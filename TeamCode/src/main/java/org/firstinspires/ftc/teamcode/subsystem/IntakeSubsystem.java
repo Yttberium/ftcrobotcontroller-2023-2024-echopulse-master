@@ -32,10 +32,10 @@ public class IntakeSubsystem extends Subsystem {
     // Config
     public static double servoOffset=-0.044;
     public static double[][] stackPositions = new double[][]{
-            new double[] {0.03, 0.90-0.38},
+            new double[] {0.1, 0.90-0.38},
             new double[] {0.03, 0.88-0.38},
             new double[] {0.03, 0.86-0.38},
-            new double[] {0.27, 0.82},
+            new double[] {0.34, 0.83},
             new double[] {0.03, 0.82-0.38},
     };
 //    public static class Manual {
@@ -52,7 +52,7 @@ public class IntakeSubsystem extends Subsystem {
             new double[] {1, 0.95}
     };
     public static double[] idlePosition = new double[] {0.25, 0.84-0.38};
-    public static double[] liftedPosition=new double[] {0.5,0.295};
+    public static double[] liftedPosition=new double[] {0.5,0.3};
 
     public static TrapezoidalMotionProfile v4bMotionProfile = new TrapezoidalMotionProfile(3.5,4,3);
     public static TrapezoidalMotionProfile pitchV4BMotionProfile = new TrapezoidalMotionProfile(3,5,3);

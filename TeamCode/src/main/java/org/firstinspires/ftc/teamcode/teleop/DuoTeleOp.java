@@ -36,6 +36,7 @@ public class DuoTeleOp extends LinearOpMode {
     public enum TeleOpState {
         INTAKING_0,
         INTAKING_1,
+        INTAKING_2,
         INTAKING_3,
         IDLE,
         LOADED,
@@ -54,6 +55,7 @@ public class DuoTeleOp extends LinearOpMode {
             new double[] { 385, 400},
             new double[] { 385, 560},
     }; //Position[<Which pair of coords>][<0 = x; 1 = y>]
+    public static double PITCHDEPOSIT = 70;
 //    public static double[][] positions = new double[][] {
 //            new double[] { 335, 200},
 //            new double[] { 360, 300},
@@ -93,16 +95,18 @@ public class DuoTeleOp extends LinearOpMode {
                 .initial(TeleOpState.IDLE)
                 .transition(TeleOpState.IDLE, TeleOpState.INTAKING_0, operatorGamepad.cross.pressed(),intakeSubsystem.stack(0))
                 .transition(TeleOpState.LOADED, TeleOpState.INTAKING_0, operatorGamepad.cross.pressed(),intakeSubsystem.stack(0))
+                .transition(TeleOpState.IDLE, TeleOpState.INTAKING_2, operatorGamepad.cross.pressed(),intakeSubsystem.stack(0))
+                .transition(TeleOpState.LOADED, TeleOpState.INTAKING_2, operatorGamepad.cross.pressed(),intakeSubsystem.stack(0))
                 .transition(TeleOpState.INTAKING_1, TeleOpState.INTAKING_0, operatorGamepad.cross.pressed(),intakeSubsystem.stack(0))
                 .transition(TeleOpState.INTAKING_3, TeleOpState.INTAKING_0, operatorGamepad.cross.pressed(),intakeSubsystem.stack(0))
-                /*.transition(TeleOpState.IDLE, TeleOpState.INTAKING_1, operatorGamepad.square.pressed(),intakeSubsystem.stack(1))
+                .transition(TeleOpState.IDLE, TeleOpState.INTAKING_1, operatorGamepad.square.pressed(),intakeSubsystem.stack(1))
                 .transition(TeleOpState.LOADED, TeleOpState.INTAKING_1, operatorGamepad.square.pressed(),intakeSubsystem.stack(1))
                 .transition(TeleOpState.INTAKING_0, TeleOpState.INTAKING_1, operatorGamepad.square.pressed(),intakeSubsystem.stack(1))
                 .transition(TeleOpState.INTAKING_3, TeleOpState.INTAKING_1, operatorGamepad.square.pressed(),intakeSubsystem.stack(1))
                 .transition(TeleOpState.IDLE, TeleOpState.INTAKING_3, operatorGamepad.triangle.pressed(),intakeSubsystem.stack(3))
                 .transition(TeleOpState.LOADED, TeleOpState.INTAKING_3, operatorGamepad.triangle.pressed(),intakeSubsystem.stack(3))
                 .transition(TeleOpState.INTAKING_0, TeleOpState.INTAKING_3, operatorGamepad.triangle.pressed(),intakeSubsystem.stack(3))
-                .transition(TeleOpState.INTAKING_1, TeleOpState.INTAKING_3, operatorGamepad.triangle.pressed(),intakeSubsystem.stack(3))*/
+                .transition(TeleOpState.INTAKING_1, TeleOpState.INTAKING_3, operatorGamepad.triangle.pressed(),intakeSubsystem.stack(3))
                 .state(TeleOpState.INTAKING_0, Command.builder()
                         .update(()->{
                             if(operatorGamepad.right_trigger.get()>0.1)
@@ -131,7 +135,7 @@ public class DuoTeleOp extends LinearOpMode {
                         })
                         .requires(intakeSubsystem)
                         .build())
-              /*  .state(TeleOpState.INTAKING_1, Command.builder()
+                .state(TeleOpState.INTAKING_1, Command.builder()
                         .update(()->{
                             if(operatorGamepad.right_trigger.get()>0.1)
                             {
@@ -158,7 +162,8 @@ public class DuoTeleOp extends LinearOpMode {
                             }
                         })
                         .requires(intakeSubsystem)
-                        .build()) */
+                        .build())
+
                 .state(TeleOpState.IDLE, Command.builder()
                         .update(()->{
                             if(operatorGamepad.right_trigger.get()>0.1)
@@ -193,7 +198,7 @@ public class DuoTeleOp extends LinearOpMode {
                                 sliderSubsystem.releaseContact(),
                                 intakeSubsystem.stop()
                         ))
-               /* .transition(TeleOpState.INTAKING_1, TeleOpState.LOADED,operatorGamepad.dpad_right.pressed(),new SequentialCommand(
+                .transition(TeleOpState.INTAKING_1, TeleOpState.LOADED,operatorGamepad.dpad_right.pressed(),new SequentialCommand(
                         new InstantCommand(()->{
                             gamepad1.rumble(1,1, 500);
                             gamepad2.rumble(1,1, 500);
@@ -211,24 +216,24 @@ public class DuoTeleOp extends LinearOpMode {
                         new WaitCommand(1000),
                         intakeSubsystem.stop()
                 ))
-                .transition(TeleOpState.INTAKING_3, TeleOpState.LOADED,operatorGamepad.dpad_right.pressed(),new SequentialCommand(
-                        new InstantCommand(()->{
-                            gamepad1.rumble(1,1, 500);
-                            gamepad2.rumble(1,1, 500);
-                        }),
-                        new WaitCommand(350),
-                        intakeSubsystem.intake(),
-                        new WaitCommand(250),
-                        intakeSubsystem.stop(),
-                        new ParallelCommand(
-                                intakeSubsystem.lift(),
-                                sliderSubsystem.closeContact()
-                        ),
-                        new WaitCommand(100),
-                        intakeSubsystem.outtake(),
-                        new WaitCommand(1000),
-                        intakeSubsystem.stop()
-                ))*/
+//        .transition(TeleOpState.INTAKING_3, TeleOpState.LOADED,operatorGamepad.dpad_left.pressed(),new SequentialCommand(
+//                        new InstantCommand(()->{
+//                            gamepad1.rumble(1,1, 500);
+//                            gamepad2.rumble(1,1, 500);
+//                        }),
+//                        new WaitCommand(350),
+//                        intakeSubsystem.intake(),
+//                        new WaitCommand(250),
+//                        intakeSubsystem.stop(),
+//                        new ParallelCommand(
+//                                intakeSubsystem.lift(),
+//                                sliderSubsystem.closeContact()
+//                        ),
+//                        new WaitCommand(100),
+//                        intakeSubsystem.outtake(),
+//                        new WaitCommand(1000),
+//                        intakeSubsystem.stop()
+//                ))
 
                 .transition(TeleOpState.LOADED, TeleOpState.DEPOSITING, operatorGamepad.dpad_up.pressed(), new SequentialCommand(
                         new InstantCommand(()->{
@@ -237,7 +242,7 @@ public class DuoTeleOp extends LinearOpMode {
                             targetY.set(positions[3][1]);
                             targetDistance.set(ik[0]);
                             targetHeight.set(ik[1]);
-                            targetAngle.set(ik[2]);
+                            targetAngle.set(PITCHDEPOSIT);
                             targetPitch.set(ik[3]);
                         }),
                         new SequentialCommand(
@@ -247,7 +252,7 @@ public class DuoTeleOp extends LinearOpMode {
                                 liftSubsystem.move(targetHeight),
                                 intakeSubsystem.idleDepositing()
                         )
-                )))
+                ))) /*
                 .transition(TeleOpState.IDLE, TeleOpState.DEPOSITING, operatorGamepad.dpad_down.pressed(), new SequentialCommand(
                         new InstantCommand(()->{
                             double[] ik = Kinematics.inverseKinematics(positions[0][0], positions[0][1]);
@@ -298,7 +303,7 @@ public class DuoTeleOp extends LinearOpMode {
                                 depositSubsystem.pitch(targetAngle),
                                 intakeSubsystem.idleDepositing()
                         )
-                ))
+                )) */
                 .transition(TeleOpState.IDLE, TeleOpState.DEPOSITING, operatorGamepad.dpad_up.pressed(), new SequentialCommand(
                         new InstantCommand(()->{
                             double[] ik = Kinematics.inverseKinematics(positions[3][0], positions[3][1]);
@@ -306,11 +311,11 @@ public class DuoTeleOp extends LinearOpMode {
                             targetY.set(positions[3][1]);
                             targetDistance.set(ik[0]);
                             targetHeight.set(ik[1]);
-                            targetAngle.set(ik[2]);
+                            targetAngle.set(PITCHDEPOSIT);
                             targetPitch.set(ik[3]);
                         }),
                         new ParallelCommand(
-                                depositSubsystem.pitch(targetAngle),
+                                depositSubsystem.pitch(targetAngle ),
                                 sliderSubsystem.move(targetDistance),
                                 liftSubsystem.move(targetHeight),
                                 intakeSubsystem.idleDepositing()
@@ -331,60 +336,60 @@ public class DuoTeleOp extends LinearOpMode {
                         Command.builder()
                         .update(()->{
 
-                            if(operatorGamepad.right_bumper.pressed().get())
-                            {
-                                double newX = targetX.get()+Math.cos(Math.toRadians(60))*70;
-                                double newY = targetY.get()+Math.cos(Math.toRadians(60))*70;
-                                targetX.set(newX);
-                                targetY.set(newY);
-                                double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
-                                targetDistance.set(ik[0]);
-                                targetHeight.set(ik[1]);
-                                targetAngle.set(ik[2]);
-                                targetPitch.set(ik[3]);
-                                sliderSubsystem.updateTargetDistance(targetDistance.get());
-                                liftSubsystem.updateTargetHeight(targetHeight.get());
-                                depositSubsystem.updateTargetAngle(targetAngle.get());
-                                canAdjustPitch.set(false);
-                                scheduler.schedule(new SequentialCommand(
-                                        new WaitCommand(800),
-                                        new InstantCommand(()->canAdjustPitch.set(true))
-                                ));
-                            }
-                            if(operatorGamepad.left_bumper.pressed().get())
-                            {
-                                double newX = targetX.get()-Math.cos(Math.toRadians(60))*70;
-                                double newY = targetY.get()-Math.cos(Math.toRadians(60))*70;
-                                targetX.set(newX);
-                                targetY.set(newY);
-                                double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
-                                targetDistance.set(ik[0]);
-                                targetHeight.set(ik[1]);
-                                targetAngle.set(ik[2]);
-                                targetPitch.set(ik[3]);
-                                sliderSubsystem.updateTargetDistance(targetDistance.get());
-                                liftSubsystem.updateTargetHeight(targetHeight.get());
-                                depositSubsystem.updateTargetAngle(targetAngle.get());
-                                canAdjustPitch.set(false);
-                                scheduler.schedule(new SequentialCommand(
-                                        new WaitCommand(800),
-                                        new InstantCommand(()->canAdjustPitch.set(true))
-                                ));
-                            }
-                            if(canAdjustPitch.get()&&sliderSubsystem.getSliderPitch()-targetPitch.get()>3.0)
-                            {
-                                double[] k = Kinematics.forwardKinematics(targetDistance.get(), sliderSubsystem.getSliderPitch());
-                                targetX.set(k[0]);
-                                targetY.set(k[1]);
-                                double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
-                                targetDistance.set(ik[0]);
-                                targetHeight.set(ik[1]);
-                                targetAngle.set(ik[2]);
-                                targetPitch.set(ik[3]);
-                                sliderSubsystem.updateTargetDistance(targetDistance.get());
-                                liftSubsystem.updateTargetHeight(targetHeight.get());
-                                depositSubsystem.updateTargetAngle(targetAngle.get());
-                            }
+//                            if(operatorGamepad.right_bumper.pressed().get())
+//                            {
+//                                double newX = targetX.get()+Math.cos(Math.toRadians(60))*70;
+//                                double newY = targetY.get()+Math.cos(Math.toRadians(60))*70;
+//                                targetX.set(newX);
+//                                targetY.set(newY);
+//                                double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
+//                                targetDistance.set(ik[0]);
+//                                targetHeight.set(ik[1]);
+//                                targetAngle.set(ik[2]);
+//                                targetPitch.set(ik[3]);
+//                                sliderSubsystem.updateTargetDistance(targetDistance.get());
+//                                liftSubsystem.updateTargetHeight(targetHeight.get());
+//                                depositSubsystem.updateTargetAngle(targetAngle.get());
+//                                canAdjustPitch.set(false);
+//                                scheduler.schedule(new SequentialCommand(
+//                                        new WaitCommand(800),
+//                                        new InstantCommand(()->canAdjustPitch.set(true))
+//                                ));
+//                            }
+//                            if(operatorGamepad.left_bumper.pressed().get())
+//                            {
+//                                double newX = targetX.get()-Math.cos(Math.toRadians(60))*70;
+//                                double newY = targetY.get()-Math.cos(Math.toRadians(60))*70;
+//                                targetX.set(newX);
+//                                targetY.set(newY);
+//                                double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
+//                                targetDistance.set(ik[0]);
+//                                targetHeight.set(ik[1]);
+//                                targetAngle.set(ik[2]);
+//                                targetPitch.set(ik[3]);
+//                                sliderSubsystem.updateTargetDistance(targetDistance.get());
+//                                liftSubsystem.updateTargetHeight(targetHeight.get());
+//                                depositSubsystem.updateTargetAngle(targetAngle.get());
+//                                canAdjustPitch.set(false);
+//                                scheduler.schedule(new SequentialCommand(
+//                                        new WaitCommand(800),
+//                                        new InstantCommand(()->canAdjustPitch.set(true))
+//                                ));
+//                            }
+//                            if(canAdjustPitch.get()&&sliderSubsystem.getSliderPitch()-targetPitch.get()>3.0)
+//                            {
+//                                double[] k = Kinematics.forwardKinematics(targetDistance.get(), sliderSubsystem.getSliderPitch());
+//                                targetX.set(k[0]);
+//                                targetY.set(k[1]);
+//                                double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
+//                                targetDistance.set(ik[0]);
+//                                targetHeight.set(ik[1]);
+//                                targetAngle.set(ik[2]);
+//                                targetPitch.set(ik[3]);
+//                                sliderSubsystem.updateTargetDistance(targetDistance.get());
+//                                liftSubsystem.updateTargetHeight(targetHeight.get());
+//                                depositSubsystem.updateTargetAngle(targetAngle.get());
+//                            }
                         })
                         .build())))
                 .transition(TeleOpState.DEPOSITING, TeleOpState.IDLE, driverGamepad.dpad_down.pressed(),
@@ -397,10 +402,10 @@ public class DuoTeleOp extends LinearOpMode {
                                         targetY.set(positions[1][1]);
                                         targetDistance.set(ik[0]);
                                         targetHeight.set(ik[1]);
-                                        targetAngle.set(ik[2]);
+                                        targetAngle.set(PITCHDEPOSIT);
                                         targetPitch.set(ik[3]);
                                     }),
-                                    new WaitCommand(100),
+                                    new WaitCommand(50),
                                     new InstantCommand(()->{
                                         double newX = targetX.get()+Math.cos(Math.toRadians(60))*70;
                                         double newY = targetY.get()+Math.cos(Math.toRadians(60))*70;
@@ -409,7 +414,7 @@ public class DuoTeleOp extends LinearOpMode {
                                         double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
                                         targetDistance.set(ik[0]);
                                         targetHeight.set(ik[1]);
-                                        targetAngle.set(ik[2]);
+                                        targetAngle.set(PITCHDEPOSIT);
                                         targetPitch.set(ik[3]);
                                     })
                                 ),
@@ -440,7 +445,7 @@ public class DuoTeleOp extends LinearOpMode {
                             double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
                             targetDistance.set(ik[0]);
                             targetHeight.set(ik[1]);
-                            targetAngle.set(ik[2]);
+                            targetAngle.set(PITCHDEPOSIT);
                             targetPitch.set(ik[3]);
                         }),
                         new ParallelCommand(
@@ -458,7 +463,7 @@ public class DuoTeleOp extends LinearOpMode {
 
                             targetDistance.set(ik[0]);
                             targetHeight.set(ik[1]);
-                            targetAngle.set(ik[2]);
+                            targetAngle.set(PITCHDEPOSIT);
                             targetPitch.set(ik[3]);
                         }),
                         new ParallelCommand(
@@ -467,22 +472,22 @@ public class DuoTeleOp extends LinearOpMode {
                                 depositSubsystem.pitch(targetAngle)
                         )
                 ))
-                .transition(TeleOpState.DEPOSITING, TeleOpState.DEPOSITING, operatorGamepad.dpad_left.pressed(), new SequentialCommand(
-                        new InstantCommand(()->{
-                            double[] ik = Kinematics.inverseKinematics(positions[1][0], positions[1][1]);
-                            targetX.set(positions[1][0]);
-                            targetY.set(positions[1][1]);
-                            targetDistance.set(ik[0]);
-                            targetHeight.set(ik[1]);
-                            targetAngle.set(ik[2]);
-                            targetPitch.set(ik[3]);
-                        }),
-                        new ParallelCommand(
-                                sliderSubsystem.move(targetDistance),
-                                liftSubsystem.move(targetHeight),
-                                depositSubsystem.pitch(targetAngle)
-                        )
-                ))
+//                .transition(TeleOpState.DEPOSITING, TeleOpState.DEPOSITING, operatorGamepad.dpad_left.pressed(), new SequentialCommand(
+//                        new InstantCommand(()->{
+//                            double[] ik = Kinematics.inverseKinematics(positions[1][0], positions[1][1]);
+//                            targetX.set(positions[1][0]);
+//                            targetY.set(positions[1][1]);
+//                            targetDistance.set(ik[0]);
+//                            targetHeight.set(ik[1]);
+//                            targetAngle.set(PITCHDEPOSIT);
+//                            targetPitch.set(ik[3]);
+//                        }),
+//                        new ParallelCommand(
+//                                sliderSubsystem.move(targetDistance),
+//                                liftSubsystem.move(targetHeight),
+//                                depositSubsystem.pitch(targetAngle)
+//                        )
+//                ))
                 .transition(TeleOpState.DEPOSITING, TeleOpState.DEPOSITING, operatorGamepad.dpad_right.pressed(), new SequentialCommand(
                         new InstantCommand(()->{
                             double[] ik = Kinematics.inverseKinematics(positions[2][0], positions[2][1]);
@@ -490,7 +495,7 @@ public class DuoTeleOp extends LinearOpMode {
                             targetY.set(positions[2][1]);
                             targetDistance.set(ik[0]);
                             targetHeight.set(ik[1]);
-                            targetAngle.set(ik[2]);
+                            targetAngle.set(PITCHDEPOSIT);
                             targetPitch.set(ik[3]);
                         }),
                         new ParallelCommand(
@@ -506,14 +511,17 @@ public class DuoTeleOp extends LinearOpMode {
                             targetY.set(positions[3][1]);
                             targetDistance.set(ik[0]);
                             targetHeight.set(ik[1]);
-                            targetAngle.set(ik[2]);
+                            targetAngle.set(PITCHDEPOSIT);
                             targetPitch.set(ik[3]);
                         }),
-                        new ParallelCommand(
-                                sliderSubsystem.move(targetDistance),
-                                liftSubsystem.move(targetHeight),
-                                depositSubsystem.pitch(targetAngle)
+                        new SequentialCommand(
+                                depositSubsystem.pitch(targetAngle),
+                                new ParallelCommand(
+                                        sliderSubsystem.move(targetDistance),
+                                        liftSubsystem.move(targetHeight)
+                                )
                         )
+
                 ))
 
 

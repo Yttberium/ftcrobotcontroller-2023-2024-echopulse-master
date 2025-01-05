@@ -8,7 +8,6 @@ import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.PwmControl;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.smartcluster.meepmeep.AutonomousUtils;
 import com.smartcluster.oracleftc.commands.Command;
 import com.smartcluster.oracleftc.commands.helpers.ConditionalCommand;
 import com.smartcluster.oracleftc.commands.helpers.InstantCommand;
@@ -52,7 +51,7 @@ public class IntakeSubsystem extends Subsystem {
             new double[] {1, 0.95}
     };
     public static double[] idlePosition = new double[] {0.25, 0.84-0.38};
-    public static double[] liftedPosition=new double[] {0.5,0.3};
+    public static double[] liftedPosition=new double[] {0.75,0.3};
 
     public static TrapezoidalMotionProfile v4bMotionProfile = new TrapezoidalMotionProfile(3.5,4,3);
     public static TrapezoidalMotionProfile pitchV4BMotionProfile = new TrapezoidalMotionProfile(3,5,3);
@@ -89,19 +88,19 @@ public class IntakeSubsystem extends Subsystem {
 
     public Command intake()
     {
-        return new InstantCommand(()->intake.setPower(-1.0));
+        return new InstantCommand(()->intake.setPower(1.0));
     }
 
-    public Command lockColor(AutonomousUtils.AllianceColor color)
-    {
-        return new InstantCommand(()->{
-            if(color== AutonomousUtils.AllianceColor.Red)rightIntake.setPosition(grabberPositions[1][0]);
-            else leftIntake.setPosition(grabberPositions[1][1]);
-        });
-    }
+//    public Command lockColor(AutonomousUtils.AllianceColor color)
+//    {
+//        return new InstantCommand(()->{
+//            if(color== AutonomousUtils.AllianceColor.Red)rightIntake.setPosition(grabberPositions[1][0]);
+//            else leftIntake.setPosition(grabberPositions[1][1]);
+//        });
+//    }
     public Command outtake()
     {
-        return new InstantCommand(()->intake.setPower(0.6));
+        return new InstantCommand(()->intake.setPower(-0.8));
     }
     public Command stop()
     {
@@ -151,8 +150,8 @@ public class IntakeSubsystem extends Subsystem {
             time.reset();
         }
 
-        @Override
-        public void update() {
+
+         public void update() {
             double v4bDistance = v4bTargetPosition-initialV4BPosition;
             double pitchV4BDistance = pitchV4BTargetPosition-initialPitchV4BPosition;
 

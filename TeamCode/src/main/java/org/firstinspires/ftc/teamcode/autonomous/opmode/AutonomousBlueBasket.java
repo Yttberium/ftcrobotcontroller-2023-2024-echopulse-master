@@ -4,6 +4,8 @@ import android.util.Size;
 
 import androidx.annotation.NonNull;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.canvas.Canvas;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.InstantAction;
@@ -19,9 +21,6 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.smartcluster.meepmeep.AutonomousBlueTrussPoses;
-import com.smartcluster.meepmeep.AutonomousRedTrussPoses;
-import com.smartcluster.meepmeep.AutonomousUtils;
 import com.smartcluster.oracleftc.commands.Command;
 import com.smartcluster.oracleftc.commands.CommandScheduler;
 import com.smartcluster.oracleftc.commands.helpers.InstantCommand;
@@ -47,64 +46,69 @@ import java.util.concurrent.atomic.AtomicReference;
 @Autonomous
 public class AutonomousBlueBasket extends LinearOpMode {
     private CommandScheduler scheduler;
-    private final AutonomousUtils.AllianceColor color= AutonomousUtils.AllianceColor.Blue;
 
-    private final AutonomousUtils.Park park= AutonomousUtils.Park.Center;
-    private static Action commandToAction(Command c)
-    {
+    private static Action commandToAction(Command c) {
         return new Action() {
-            private boolean initialized=false;
+            private boolean initialized = false;
+
             @Override
             public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-                if(!initialized) {
+                if (!initialized) {
                     c.init();
                     initialized = true;
                 }
                 c.update();
-                if(c.finished())
-                {
+                if (c.finished()) {
                     c.end(false);
                     return false;
-                }else return true;
+                } else return true;
             }
         };
     }
-    long lastTime=-1;
+
+    long lastTime = -1;
     private IntakeSubsystem intakeSubsystem;
     private DepositSubsystem depositSubsystem;
     private LiftSubsystem liftSubsystem;
     private SliderSubsystem sliderSubsystem;
+    Pose2d startPosition = new Pose2d(-35.0,-63,Math.toRadians(-90));
+    public static double speed=50;
+    public static double[][] positions = new double[][] {
+            new double[] { 335, 200},
+            new double[] { 360, 300},
+            new double[] { 385, 400},
+            new double[] { 385, 560},
+    }; //Position[<Which pair of coords>][<0 = x; 1 = y>]
+    public static double PITCHDEPOSIT = 70;
+    AtomicReference<Double> targetX=new AtomicReference<>(0.0);
+    AtomicReference<Double> targetY=new AtomicReference<>(0.0);
+    AtomicReference<Double> targetHeight=new AtomicReference<>(0.0);
+    AtomicReference<Double> targetDistance=new AtomicReference<>(0.0);
+    AtomicReference<Double> targetAngle=new AtomicReference<>(0.0);
+    AtomicReference<Double> targetPitch=new AtomicReference<>(0.0);
+    ElapsedTime time=new ElapsedTime();
+
+
     @Override
     public void runOpMode() throws InterruptedException {
-        AutonomousUtils.StartPosition startPosition = AutonomousUtils.StartPosition.Basket;
         scheduler = new CommandScheduler();
-        MecanumDrive mecanumDrive = new MecanumDrive(hardwareMap, AutonomousBlueTrussPoses.getStartPose(color, startPosition));
+        MecanumDrive mecanumDrive = new MecanumDrive(hardwareMap, startPosition);
         depositSubsystem = new DepositSubsystem(this);
         intakeSubsystem = new IntakeSubsystem(this);
         liftSubsystem = new LiftSubsystem(this);
         sliderSubsystem = new SliderSubsystem(this);
 
-//        WebcamName arducam = hardwareMap.get(WebcamName.class, "Arducam");
-//        SwitchableCameraName switchableCamera = ClassFactory.getInstance()
-//                .getCameraManager().nameForSwitchableCamera(c270, arducam);
 
-//        VisionPortal portal = new VisionPortal.Builder()
-//                .setCamera(c270)
-//                .setCameraResolution(new Size(1280, 720))
-//                .setStreamFormat(VisionPortal.StreamFormat.YUY2)
-//                .setAutoStopLiveView(true)
-//                .addProcessor(processor)
-////                .addProcessor(frontProcessor)
-//                .build();
-        AutonomousUtils.AutoCase autoCase = null;
 
-//        portal.setProcessorEnabled(frontProcessor, false);
+
+
         Command.run(new SequentialCommand(
                 depositSubsystem.reset(),
                 liftSubsystem.reset(),
                 sliderSubsystem.reset(),
+                intakeSubsystem.reset(),
                 new InstantCommand(sliderSubsystem::resetPitch),
-                intakeSubsystem.lockColor(color),
+
                 new RaceCommand(
                         depositSubsystem.update(),
                         depositSubsystem.pitch(new AtomicReference<>(13.86))
@@ -116,473 +120,217 @@ public class AutonomousBlueBasket extends LinearOpMode {
                 sliderSubsystem.update()
         ));
 
-        HashMap<AutonomousUtils.AutoCase, Action> auto = new HashMap<>();
-        double[] firstRowKinematics = Kinematics.inverseKinematics(390, 260);
-        double[] safeRowKinematics = Kinematics.inverseKinematics(390, 260);
-        double[] secondRowKinematics = Kinematics.inverseKinematics(390, 260);
-        for (AutonomousUtils.AutoCase i : AutonomousUtils.AutoCase.values()) {
-            auto.put(i, new SequentialAction(
-                    new ParallelAction(
-                            caseAndStack(mecanumDrive, color, i),
-                            commandToAction(
-                                    new SequentialCommand(
-                                            intakeSubsystem.reset(),
-                                            intakeSubsystem.lockColor(color),
-                                            new WaitCommand(()->Math.abs(mecanumDrive.pose.position.y)< AutonomousUtils.TILE_WIDTH),
-                                            new WaitCommand(500),
-                                            intakeSubsystem.stack(4)
-                                    )
-                            )
-                    ),
-                    new ParallelAction(
-                            stackToBackdrop(mecanumDrive, color, startPosition, i),
-                            commandToAction(
-                                    new ParallelCommand(
-                                            new SequentialCommand(
-                                                    new WaitCommand(300),
-                                                    intakeSubsystem.outtake(),
-                                                    new WaitCommand(500),
-                                                    intakeSubsystem.stop(),
-                                                    intakeSubsystem.lift(),
-                                                    //sliderSubsystem.releaseContact()
-                                                    intakeSubsystem.outtake(),
-                                                    new WaitCommand(800),
-                                                    intakeSubsystem.stop()
-                                                    //sliderSubsystem.releaseContact()
-                                            ),
-                                            new SequentialCommand(
-                                                    new WaitCommand(()->mecanumDrive.pose.position.x> AutonomousUtils.TILE_WIDTH&&sliderSubsystem.updateMode!= SliderSubsystem.UpdateMode.ENSURE_CONTACT),
-                                                    new ParallelCommand(
-                                                            sliderSubsystem.move(new AtomicReference<>(firstRowKinematics[0])),
-                                                            liftSubsystem.move(new AtomicReference<>(firstRowKinematics[1])),
-                                                            depositSubsystem.pitch(new AtomicReference<>(firstRowKinematics[2]))
-                                                    )
-                                            )
-                                    )
 
-                            )
+        waitForStart();
 
-                    ),
-                    commandToAction(
-                            new SequentialCommand(
-                                    new WaitCommand(300),
-                                    depositSubsystem.open(),
-                                    new ParallelCommand(
-                                            sliderSubsystem.move(new AtomicReference<>(safeRowKinematics[0])),
-                                            liftSubsystem.move(new AtomicReference<>(safeRowKinematics[1])),
-                                            depositSubsystem.pitch(new AtomicReference<>(safeRowKinematics[2]))
-                                    ),
-                                    new WaitCommand(500)
+        Action autoAction = new SequentialAction(
+                  mecanumDrive.actionBuilder(startPosition)
+                          .setTangent(Math.toRadians(90))
+                          .splineToLinearHeading(new Pose2d(-47.5,-47.5,Math.toRadians(225)),Math.toRadians(90))
+                          .build(),
 
-                            )
-                    ),
-                    new ParallelAction(
-                            commandToAction(
-                                    new ParallelCommand(
-                                            new SequentialCommand(
-                                                    new WaitCommand(500),
-                                                    sliderSubsystem.move(new AtomicReference<>(0.0))
-                                            ),
-                                            new SequentialCommand(
-                                                    new WaitCommand(250),
-                                                    depositSubsystem.pitch(new AtomicReference<>(13.86)),
-                                                    depositSubsystem.close()
-                                            ),
-                                            new SequentialCommand(
-                                                    new WaitCommand(750),
-                                                    liftSubsystem.move(new AtomicReference<>(0.0))
-                                            )
-                                    )
-                            ),
-                            commandToAction(
-                                    new SequentialCommand(
-                                            new WaitCommand(()->mecanumDrive.pose.position.x<-AutonomousUtils.TILE_WIDTH_HALF),
-                                            intakeSubsystem.stack(2)
-                                    )
-                            ),
-                            backdropToStack(mecanumDrive,color,startPosition,i)
-                    ),
+                commandToAction(new SequentialCommand(
+                        new InstantCommand(()->{
+                            double[] ik = Kinematics.inverseKinematics(positions[3][0], positions[3][1]);
+                            targetX.set(positions[3][0]);
+                            targetY.set(positions[3][1]);
+                            targetDistance.set(ik[0]);
+                            targetHeight.set(ik[1]);
+                            targetAngle.set(PITCHDEPOSIT);
+                            targetPitch.set(ik[3]);
+                        }),
+                        new ParallelCommand(
+                                depositSubsystem.pitch(targetAngle ),
+                                sliderSubsystem.move(targetDistance),
+                                liftSubsystem.move(targetHeight)
 
-                    new ParallelAction(
-                            stackToBackdropExterior(mecanumDrive, color, startPosition),
-                            commandToAction(
-                                    new ParallelCommand(
-                                            new SequentialCommand(
-                                                    new WaitCommand(300),
-                                                    intakeSubsystem.outtake(),
-                                                    new WaitCommand(500),
-                                                    intakeSubsystem.stop(),
-                                                    intakeSubsystem.lift(),
-                                                    //sliderSubsystem.releaseContact()
-                                                    intakeSubsystem.outtake(),
-                                                    new WaitCommand(800),
-                                                    intakeSubsystem.stop()
-                                                    //sliderSubsystem.releaseContact()
-                                            ),
-                                            new SequentialCommand(
-                                                    new WaitCommand(()->mecanumDrive.pose.position.x> AutonomousUtils.TILE_WIDTH&&sliderSubsystem.updateMode!= SliderSubsystem.UpdateMode.ENSURE_CONTACT),
-                                                    new ParallelCommand(
-                                                            sliderSubsystem.move(new AtomicReference<>(secondRowKinematics[0])),
-                                                            liftSubsystem.move(new AtomicReference<>(secondRowKinematics[1])),
-                                                            depositSubsystem.pitch(new AtomicReference<>(secondRowKinematics[2]))
-                                                    )
-                                            )
-                                    )
+                        ),
+                        new WaitCommand(100),
+                        depositSubsystem.open(),
+                        new WaitCommand(350),
+                        new SequentialCommand(
+                                new WaitCommand(50),
+                                new SequentialCommand(
+                                        new InstantCommand(()->{
+                                            double[] ik = Kinematics.inverseKinematics(positions[1][0], positions[1][1]);
+                                            targetX.set(positions[1][0]);
+                                            targetY.set(positions[1][1]);
+                                            targetDistance.set(ik[0]);
+                                            targetHeight.set(ik[1]);
+                                            targetAngle.set(PITCHDEPOSIT);
+                                            targetPitch.set(ik[3]);
+                                        }),
+                                        new WaitCommand(50),
+                                        new InstantCommand(()->{
+                                            double newX = targetX.get()+Math.cos(Math.toRadians(60))*70;
+                                            double newY = targetY.get()+Math.cos(Math.toRadians(60))*70;
+                                            targetX.set(newX);
+                                            targetY.set(newY);
+                                            double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
+                                            targetDistance.set(ik[0]);
+                                            targetHeight.set(ik[1]);
+                                            targetAngle.set(PITCHDEPOSIT);
+                                            targetPitch.set(ik[3]);
+                                        })
+                                ),
+                                new ParallelCommand(
+                                        sliderSubsystem.move(targetDistance),
+                                        liftSubsystem.move(targetHeight),
+                                        depositSubsystem.pitch(targetAngle)
+                                ),
+                                new WaitCommand(400),
+                                new ParallelCommand(
+                                        new SequentialCommand(
+                                                new WaitCommand(500),
+                                                sliderSubsystem.retract()
+                                        ),
+                                        new SequentialCommand(
+                                                new WaitCommand(250),
+                                                depositSubsystem.pitch(new AtomicReference<>(13.86)),
+                                                depositSubsystem.close()
+                                        ),
+                                        new SequentialCommand(
+                                                new WaitCommand(750),
+                                                liftSubsystem.move(new AtomicReference<>(0.0))
+                                        )
+                                ),
+                                intakeSubsystem.lift()))
 
-                            )
+                ),
 
-                    ),
-                    commandToAction(
-                            new SequentialCommand(
-                                    new WaitCommand(500),
-                                    depositSubsystem.open(),
-                                    new WaitCommand(500)
-                            )
-                    ),
-                    new ParallelAction(
-                            commandToAction(
-                                    new ParallelCommand(
-                                            new SequentialCommand(
-                                                    new WaitCommand(500),
-                                                    sliderSubsystem.move(new AtomicReference<>(0.0))
-                                            ),
-                                            new SequentialCommand(
-                                                    new WaitCommand(250),
-                                                    depositSubsystem.pitch(new AtomicReference<>(13.86)),
-                                                    depositSubsystem.close()
-                                            ),
-                                            new SequentialCommand(
-                                                    new WaitCommand(750),
-                                                    liftSubsystem.move(new AtomicReference<>(0.0))
-                                            )
-                                    )
-                            ),
-                            commandToAction(
-                                    new SequentialCommand(
-                                            new WaitCommand(()->mecanumDrive.pose.position.x<-AutonomousUtils.TILE_WIDTH_HALF),
-                                            intakeSubsystem.stack(4)
-                                    )
-                            ),
-                            backdropToStack2(mecanumDrive,color,startPosition)
-                    ),
-                    new ParallelAction(
-                            stack2ToBackdropExterior(mecanumDrive, color, startPosition),
-                            commandToAction(
-                                    new ParallelCommand(
-                                            new SequentialCommand(
-                                                    new WaitCommand(300),
-                                                    intakeSubsystem.outtake(),
-                                                    new WaitCommand(500),
-                                                    intakeSubsystem.stop(),
-                                                    intakeSubsystem.lift(),
-                                                    //sliderSubsystem.releaseContact()
-                                                    intakeSubsystem.outtake(),
-                                                    new WaitCommand(800),
-                                                    intakeSubsystem.stop()
-                                                    //sliderSubsystem.releaseContact()
-                                            ),
-                                            new SequentialCommand(
-                                                    new WaitCommand(()->mecanumDrive.pose.position.x> AutonomousUtils.TILE_WIDTH&&sliderSubsystem.updateMode!= SliderSubsystem.UpdateMode.ENSURE_CONTACT),
-                                                    new WaitCommand(100),
-                                                    new ParallelCommand(
-                                                            sliderSubsystem.move(new AtomicReference<>(secondRowKinematics[0])),
-                                                            liftSubsystem.move(new AtomicReference<>(secondRowKinematics[1])),
-                                                            depositSubsystem.pitch(new AtomicReference<>(secondRowKinematics[2]))
-                                                    )
-                                            )
-                                    )
+                mecanumDrive.actionBuilder(new Pose2d(-47.5,-47.5,Math.toRadians(225)))
+                        .splineToLinearHeading(new Pose2d(-47.6,-42,Math.toRadians(270)),Math.toRadians(90))
+                        .build(),
 
-                            )
+                commandToAction(new SequentialCommand(
+                        intakeSubsystem.stack(0),
+                        new SequentialCommand(
+                                intakeSubsystem.intake(),
+                                new WaitCommand(300),
+                                intakeSubsystem.stop(),
+                                new ParallelCommand(
+                                        intakeSubsystem.lift(),
+                                        sliderSubsystem.closeContact()
+                                ),
+                                new WaitCommand(100),
+                                intakeSubsystem.outtake(),
+                                new WaitCommand(1000),
+                                sliderSubsystem.releaseContact(),
+                                intakeSubsystem.stop()
+                        ))
+                ),
 
-                    ),
-                    commandToAction(
-                            new SequentialCommand(
-                                    new WaitCommand(500),
-                                    depositSubsystem.open(),
-                                    new WaitCommand(500)
-                            )
-                    ),
-                    commandToAction(
-                            new ParallelCommand(
-                                    new SequentialCommand(
-                                            new WaitCommand(500),
-                                            sliderSubsystem.move(new AtomicReference<>(0.0))
-                                    ),
-                                    new SequentialCommand(
-                                            new WaitCommand(250),
-                                            depositSubsystem.pitch(new AtomicReference<>(13.86)),
-                                            depositSubsystem.close()
-                                    ),
-                                    new SequentialCommand(
-                                            new WaitCommand(750),
-                                            liftSubsystem.move(new AtomicReference<>(0.0))
-                                    )
-                            )
-                    )
-            ));
+                mecanumDrive.actionBuilder(new Pose2d(-47.6,-42,Math.toRadians(270)))
+                        .splineToLinearHeading(new Pose2d(-47.5,-47.5,Math.toRadians(225)),Math.toRadians(90))
+                        .build(),
 
-        }
-        while (opModeInInit()) {
-            telemetry.addData("autoCase", autoCase);
-            telemetry.update();
-        }
+                commandToAction(new SequentialCommand(
+                        new InstantCommand(()->{
+                                    double[] ik = Kinematics.inverseKinematics(positions[3][0], positions[3][1]);
+                                    targetX.set(positions[3][0]);
+                                    targetY.set(positions[3][1]);
+                                    targetDistance.set(ik[0]);
+                                    targetHeight.set(ik[1]);
+                                    targetAngle.set(PITCHDEPOSIT);
+                                    targetPitch.set(ik[3]);
+                                }),
+                                new ParallelCommand(
+                                        depositSubsystem.pitch(targetAngle ),
+                                        sliderSubsystem.move(targetDistance),
+                                        liftSubsystem.move(targetHeight)
 
-        List<LynxModule> modules = hardwareMap.getAll(LynxModule.class);
-        for (LynxModule module :
-                modules) {
-            module.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
-        }
-        AtomicBoolean finishedAction = new AtomicBoolean(false);
-        Actions.runBlocking(
-                new ParallelAction(
-                        commandToAction(Command.builder()
-                                .update(() -> {
-                                    for (LynxModule module :
-                                            modules) {
-                                        module.clearBulkCache();
-                                    }
-                                    try {
-                                        scheduler.update();
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                    long currentTime = System.nanoTime();
-                                    if (lastTime != -1)
-                                        telemetry.addData("loop(hz)", 1000 / ((currentTime - lastTime) / 1E6));
-                                    lastTime = System.nanoTime();
-                                    telemetry.update();
-                                })
-                                .finished(finishedAction::get)
-                                .build()),
-                        new SequentialAction(
-                                auto.get(autoCase),
-                                new InstantAction(() -> finishedAction.set(true))
-                        )
-                )
+                                ),
+                                new WaitCommand(100),
+                                depositSubsystem.open(),
+                                new WaitCommand(350),
+                                new SequentialCommand(
+                                        new WaitCommand(50),
+                                        new SequentialCommand(
+                                                new InstantCommand(()->{
+                                                    double[] ik = Kinematics.inverseKinematics(positions[1][0], positions[1][1]);
+                                                    targetX.set(positions[1][0]);
+                                                    targetY.set(positions[1][1]);
+                                                    targetDistance.set(ik[0]);
+                                                    targetHeight.set(ik[1]);
+                                                    targetAngle.set(PITCHDEPOSIT);
+                                                    targetPitch.set(ik[3]);
+                                                }),
+                                                new WaitCommand(50),
+                                                new InstantCommand(()->{
+                                                    double newX = targetX.get()+Math.cos(Math.toRadians(60))*70;
+                                                    double newY = targetY.get()+Math.cos(Math.toRadians(60))*70;
+                                                    targetX.set(newX);
+                                                    targetY.set(newY);
+                                                    double[] ik = Kinematics.inverseKinematics(targetX.get(), targetY.get());
+                                                    targetDistance.set(ik[0]);
+                                                    targetHeight.set(ik[1]);
+                                                    targetAngle.set(PITCHDEPOSIT);
+                                                    targetPitch.set(ik[3]);
+                                                })
+                                        ),
+                                        new ParallelCommand(
+                                                sliderSubsystem.move(targetDistance),
+                                                liftSubsystem.move(targetHeight),
+                                                depositSubsystem.pitch(targetAngle)
+                                        ),
+                                        new WaitCommand(400),
+                                        new ParallelCommand(
+                                                new SequentialCommand(
+                                                        new WaitCommand(500),
+                                                        sliderSubsystem.retract()
+                                                ),
+                                                new SequentialCommand(
+                                                        new WaitCommand(250),
+                                                        depositSubsystem.pitch(new AtomicReference<>(13.86)),
+                                                        depositSubsystem.close()
+                                                ),
+                                                new SequentialCommand(
+                                                        new WaitCommand(750),
+                                                        liftSubsystem.move(new AtomicReference<>(0.0))
+                                                )
+                                        ),
+                                        intakeSubsystem.lift()))
+
+                        ),
+                mecanumDrive.actionBuilder(new Pose2d(-47.5,-47.5,Math.toRadians(225)))
+                        .splineToLinearHeading(new Pose2d(-34,-13,Math.toRadians(0)),Math.toRadians(60))
+                        .build(),
+                mecanumDrive.actionBuilder(new Pose2d(-34,-13,Math.toRadians(0)))
+                        .splineToLinearHeading(new Pose2d(-31,-13,Math.toRadians(0)),Math.toRadians(60))
+                        .build(),
+                commandToAction(new SequentialCommand(
+                        liftSubsystem.move(new AtomicReference<>(2950.0)),
+                        sliderSubsystem.move(new AtomicReference<>(400.0)),
+                        depositSubsystem.pitch(new AtomicReference<>(135.0))
+                ))
+
+
         );
-    }
-    public static Action caseAndStack(MecanumDrive drive, AutonomousUtils.AllianceColor color, AutonomousUtils.AutoCase autoCase)
-    {
-        final Pose2d startPose = AutonomousRedTrussPoses.getStartPose(color, AutonomousUtils.StartPosition.Basket);
-        final Pose2d casePose = AutonomousRedTrussPoses.getCasePose(color, AutonomousUtils.StartPosition.Basket,autoCase);
-        final Pose2d stackPose = AutonomousRedTrussPoses.getStackPose(color, AutonomousUtils.StartPosition.Basket);
-        final Twist2d backAway = new Twist2d(new Vector2d(-8.5,0),0);
+        List<LynxModule> lynxModules = hardwareMap.getAll(LynxModule.class);
+        for(LynxModule lynxModule: lynxModules)
+            lynxModule.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
 
-        switch (autoCase)
-        {
-            case Truss:
-                return drive.actionBuilder(startPose)
-                        .setTangent(startPose.heading)
-                        .splineToLinearHeading(casePose, casePose.heading)
-                        .setTangent(casePose.heading.log()+Math.PI/2)
-                        .setReversed(true)
-                        .splineToLinearHeading(stackPose, AutonomousUtils.mirrorColor(Math.toRadians(90), color))
-                        .build();
-            case Side:
-                return drive.actionBuilder(startPose)
-                        .setTangent(startPose.heading)
-                        .splineToLinearHeading(casePose, casePose.heading)
-                        .setTangent(casePose.heading.log()-Math.PI)
-                        .splineToLinearHeading(casePose.plus(backAway), casePose.heading.log()-Math.PI)
-                        .setTangent(AutonomousUtils.mirrorColor(Math.toRadians(45), color))
-                        .splineToLinearHeading(stackPose, Math.toRadians(180))
-                        .build();
-            case Middle:
-                return drive.actionBuilder(startPose)
-                        .setTangent(startPose.heading)
-                        .splineToLinearHeading(casePose, casePose.heading)
-                        .setTangent(casePose.heading.log()-Math.PI)
-                        .splineToLinearHeading(stackPose, AutonomousUtils.mirrorColor(Math.toRadians(90),color))
-                        .build();
+        Canvas c = new com.acmerobotics.dashboard.canvas.Canvas();
+        autoAction.preview(c);
+        boolean b = true;
+        while (b && !Thread.currentThread().isInterrupted()) {
+            TelemetryPacket p = new TelemetryPacket();
+            p.fieldOverlay().getOperations().addAll(c.getOperations());
+
+            b = autoAction.run(p);
+            scheduler.update();
+            FtcDashboard.getInstance().sendTelemetryPacket(p);
+            for(LynxModule lynxModule: lynxModules)
+                lynxModule.clearBulkCache();
         }
-        return null;
-    }
-//    public Action oscillateUntilIntake(MecanumDrive drive, AutonomousUtils.AllianceColor color)
-//    {
-//        final Pose2d stackPose = AutonomousBlueTrussPoses.getStackPose(color, AutonomousUtils.StartPosition.Basket);
-//        final Pose2d nearStackPose = stackPose.plus(new Twist2d(new Vector2d(-7.5,0),0));
-//
-//        TrajectoryActionBuilder[] builders = new TrajectoryActionBuilder[]
-//            {
-//                    drive.actionBuilder(stackPose)
-//                            .setTangent(Math.toRadians(180))
-//                            .setReversed(true)
-//                            .splineToLinearHeading(nearStackPose, Math.toRadians(0), ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30)),
-//                    drive.actionBuilder(nearStackPose)
-//                            .setTangent(Math.toRadians(0))
-//                            .setReversed(false)
-//                            .splineToLinearHeading(stackPose, Math.toRadians(180), ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30))
-//            };
-//        Action[] oscillations = new Action[] {
-//            builders[0].build(),
-//            builders[1].build()
-//        };
-//        return new ParallelAction(
-//                commandToAction(intakeSubsystem.intakeUntilPixels(false)),
-//                new Action() {
-//                    boolean init = false;
-//                    int oscillationIndex=0;
-//                    ElapsedTime time=new ElapsedTime();
-//                    @Override
-//                    public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-//                        if(!init)
-//                        {
-//                            init=true;
-//                            time.reset();
-//                        }
-//
-//                        boolean a = oscillations[oscillationIndex].run(telemetryPacket);
-//                        if(!a){
-//                            oscillations[oscillationIndex]=builders[oscillationIndex].build();
-//                            oscillationIndex=(1-oscillationIndex);
-//                            if(oscillationIndex==0)
-//                                scheduler.schedule(intakeSubsystem.stack(0));
-//                            if(oscillationIndex==1)
-//                                scheduler.schedule(
-//                                        new SequentialCommand(
-//                                                new WaitCommand(300),
-//                                                intakeSubsystem.outtake(),
-//                                                new WaitCommand(300),
-//                                                intakeSubsystem.intake()
-//                                        ));
-//                        }
-//                        if(time.seconds()>7.5)
-//                        {
-//                            return false;
-//                        }
-//
-//
-//
-//                        return !intakeSubsystem.bothPixelsDetected();
-//                    }
-//                }
-//        );
-//
-//
-//    }
-//    public Action oscillateUntilIntake2(MecanumDrive drive, AutonomousUtils.AllianceColor color)
-//    {
-//        final Pose2d stackPose = AutonomousBlueTrussPoses.getStack2Pose(color, AutonomousUtils.StartPosition.Basket);
-//        final Pose2d nearStackPose = stackPose.plus(new Twist2d(new Vector2d(-5.75,0),0));
-//
-//        TrajectoryActionBuilder[] builders = new TrajectoryActionBuilder[]
-//                {
-//                        drive.actionBuilder(stackPose)
-//                                .setTangent(stackPose.heading.log()-Math.PI)
-//                                .setReversed(true)
-//                                .splineToLinearHeading(nearStackPose, stackPose.heading, ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30)),
-//                        drive.actionBuilder(nearStackPose)
-//                                .setTangent( stackPose.heading)
-//                                .setReversed(false)
-//                                .splineToLinearHeading(stackPose, stackPose.heading.log()-Math.PI, ((pose2dDual, posePath, v) -> 30), (pose2dDual, posePath, v) -> new MinMax(-30,30))
-//                };
-//        Action[] oscillations = new Action[] {
-//                builders[0].build(),
-//                builders[1].build()
-//        };
-//        return new ParallelAction(
-//                commandToAction(intakeSubsystem.intakeUntilPixels(false)),
-//                new Action() {
-//                    boolean init = false;
-//                    int oscillationIndex=0;
-//                    ElapsedTime time=new ElapsedTime();
-//                    @Override
-//                    public boolean run(@NonNull TelemetryPacket telemetryPacket) {
-//                        if(!init)
-//                        {
-//                            init=true;
-//                            time.reset();
-//                        }
-//
-//                        boolean a = oscillations[oscillationIndex].run(telemetryPacket);
-//                        if(!a){
-//                            oscillations[oscillationIndex]=builders[oscillationIndex].build();
-//                            oscillationIndex=(1-oscillationIndex);
-//                            if(oscillationIndex==1)
-//                                scheduler.schedule(intakeSubsystem.stack(0));
-//                        }
-//                        if(time.seconds()>7.5)
-//                        {
-//                            return false;
-//                        }
-//
-//
-//
-//                        return !intakeSubsystem.bothPixelsDetected();
-//                    }
-//                }
-//        );
-//
-//
-//    }
-    public Action stackToBackdrop(MecanumDrive drive, AutonomousUtils.AllianceColor color, AutonomousUtils.StartPosition startPosition, AutonomousUtils.AutoCase autoCase)
-    {
-        final Pose2d cotPose = AutonomousUtils.mirrorColor(new Pose2d(AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF, Math.toRadians(0)),color);
-        final Pose2d cot2Pose = AutonomousUtils.mirrorColor(new Pose2d(-AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF, Math.toRadians(0)),color);
 
-        return drive.actionBuilder(AutonomousBlueTrussPoses.getStackPose(color, startPosition))
-                .setTangent(AutonomousUtils.mirrorColor(Math.toRadians(0),color))
-                .setReversed(false)
-                .splineToLinearHeading(cot2Pose, Math.toRadians(0))
-                .splineToLinearHeading(cotPose, Math.toRadians(0))
-                .setTangent(Math.toRadians(0))
-                .splineToLinearHeading(AutonomousBlueTrussPoses.getBackdropPose(color,startPosition,autoCase), Math.toRadians(0))
-                .build();
-    }
-    public Action stackToBackdropExterior(MecanumDrive drive, AutonomousUtils.AllianceColor color, AutonomousUtils.StartPosition startPosition)
-    {
-        final Pose2d cotPose = AutonomousUtils.mirrorColor(new Pose2d(AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF, Math.toRadians(0)),color);
-        final Pose2d cot2Pose = AutonomousUtils.mirrorColor(new Pose2d(-AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF, Math.toRadians(0)),color);
-        return drive.actionBuilder(AutonomousBlueTrussPoses.getStackPose(color, startPosition))
-                .setTangent(Math.toRadians(0))
-                .setReversed(false)
-                .splineToLinearHeading(cot2Pose, Math.toRadians(0))
-                .splineToLinearHeading(cotPose, Math.toRadians(0))
-                .splineToLinearHeading(AutonomousBlueTrussPoses.getBackdropExterior(color,startPosition), Math.toRadians(0))
-                .build();
-    }
-    public Action backdropToStack(MecanumDrive drive, AutonomousUtils.AllianceColor color, AutonomousUtils.StartPosition startPosition, AutonomousUtils.AutoCase autoCase)
-    {
-        final Pose2d cotPose = AutonomousUtils.mirrorColor(new Pose2d(AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF, Math.toRadians(0)),color);
-        final Pose2d cot2Pose = AutonomousUtils.mirrorColor(new Pose2d(-AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF, Math.toRadians(0)),color);
+        while (opModeIsActive()){
+            Actions.runBlocking(autoAction);
 
-        return drive.actionBuilder(AutonomousBlueTrussPoses.getBackdropPose(color,startPosition,autoCase))
-                .setTangent(Math.toRadians(180))
+        }
 
-                .setReversed(true)
-                .splineToLinearHeading(cotPose, Math.toRadians(180))
-                .splineToLinearHeading(cot2Pose, Math.toRadians(180))
-                .setTangent(Math.toRadians(180))
-                .splineToLinearHeading(AutonomousBlueTrussPoses.getStackPose(color, startPosition).plus(new Twist2d(new Vector2d(0,-3),0)), Math.toRadians(180))
-                .build();
-    }
-    public Action backdropToStack2(MecanumDrive drive, AutonomousUtils.AllianceColor color, AutonomousUtils.StartPosition startPosition)
-    {
-        final Pose2d cotPose = AutonomousUtils.mirrorColor(new Pose2d(AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF-1, Math.toRadians(0)),color);
-        final Pose2d cot2Pose = AutonomousUtils.mirrorColor(new Pose2d(-AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF-1, Math.toRadians(0)),color);
 
-        return drive.actionBuilder(AutonomousBlueTrussPoses.getBackdropExterior(color,startPosition))
-                .setTangent(Math.toRadians(180))
-                .setReversed(true)
-                .splineToLinearHeading(cotPose, Math.toRadians(180))
-                .setTangent(Math.toRadians(180))
-                .splineToSplineHeading(cot2Pose, Math.toRadians(180))
-                .setTangent(Math.toRadians(180))
-                .splineToLinearHeading(AutonomousBlueTrussPoses.getStack2Pose(color, startPosition), AutonomousBlueTrussPoses.getStack2Pose(color, startPosition).heading.log()-Math.PI)
-                .build();
-    }
-    public Action stack2ToBackdropExterior(MecanumDrive drive, AutonomousUtils.AllianceColor color, AutonomousUtils.StartPosition startPosition)
-    {
-        final Pose2d cotPose = AutonomousUtils.mirrorColor(new Pose2d(AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF+2, Math.toRadians(0)),color);
-        final Pose2d cot2Pose = AutonomousUtils.mirrorColor(new Pose2d(-AutonomousUtils.TILE_WIDTH, -AutonomousUtils.TILE_WIDTH_HALF, Math.toRadians(0)),color);
-        return drive.actionBuilder(AutonomousBlueTrussPoses.getStack2Pose(color, startPosition))
-                .setTangent(Math.toRadians(0))
-                .setReversed(false)
-                .splineToSplineHeading(cot2Pose, Math.toRadians(0))
-                .setTangent(Math.toRadians(0))
-                .splineToSplineHeading(cotPose, Math.toRadians(0))
-                .splineToLinearHeading(AutonomousBlueTrussPoses.getBackdropExterior(color,startPosition), Math.toRadians(0))
-                .build();
     }
 }
+
 

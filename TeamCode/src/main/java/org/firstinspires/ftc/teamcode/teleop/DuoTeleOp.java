@@ -56,12 +56,6 @@ public class DuoTeleOp extends LinearOpMode {
             new double[] { 385, 560},
     }; //Position[<Which pair of coords>][<0 = x; 1 = y>]
     public static double PITCHDEPOSIT = 70;
-//    public static double[][] positions = new double[][] {
-//            new double[] { 335, 200},
-//            new double[] { 360, 300},
-//            new double[] { 385, 400},
-//            new double[] { 385, 500},
-//    };
     long lastTime =-1;
 
     @Override
